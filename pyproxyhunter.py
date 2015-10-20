@@ -13,7 +13,7 @@ __author__ = 'Kir Marchenko \nkir.marchenko@gmail.com'
 
 
 class ProxyHunter(object):
-    def __init__(self, good_proxies='goodproxylist.txt', verbose=False, timeout=2, threads=200, pages=1):
+    def __init__(self, good_proxies='goodproxylist.txt', verbose=False, timeout=2, threads=200, pages=2):
         self.timeout = timeout
         self.verbose = verbose
         self.goodproxy = good_proxies
@@ -42,7 +42,7 @@ class ProxyHunter(object):
 
         try:
             req = requests.get(site, timeout=self.timeout)
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, socket.timeout):
             print "Can't connect to %s" % site
             return
         if not req.ok:
@@ -59,20 +59,21 @@ class ProxyHunter(object):
         try:
             test_req = requests.get('http://microsoft.com/', proxies=proxies, timeout=self.timeout)
         except (requests.exceptions.ConnectionError, LocationParseError, requests.exceptions.Timeout,
-                requests.exceptions.SSLError, requests.exceptions.TooManyRedirects, socket.timeout):
+                requests.exceptions.InvalidURL, requests.exceptions.SSLError, requests.exceptions.TooManyRedirects,
+                socket.timeout):
             return False
         return True if 'microsoft' in test_req.text else False
 
     def check_proxy(self, proxy_to_check, proxy_file, proxy_list):
         if self.proxy_is_alive(proxy_to_check):
             if self.verbose:
-                print "%s is dead" % proxy_to_check
-        else:
-            if self.verbose:
                 print "%s is alive" % proxy_to_check
             proxy_list.append(proxy_to_check)
             if proxy_file is not None:
                 proxy_file.write(proxy_to_check + '\n')
+        else:
+            if self.verbose:
+                print "%s is dead" % proxy_to_check
 
     def check_proxies_multi_thread(self, proxylist, file_to_store=None):
         good_proxies = []
@@ -98,7 +99,7 @@ class ProxyHunter(object):
             self.check_proxies_multi_thread(proxylist, goodproxy)
             finish_time = datetime.now()
             delta = (finish_time - start_time).seconds
-            print 'Checking took %d seconds (about %d minutes)' % (delta, delta / 60)
+            print 'Checking took %d seconds (about %s minutes)' % (delta, "{0:.1f}".format(round(float(delta) / 60, 1)))
         with open(self.goodproxy, 'r') as final:
             print "%d fresh proxies has been saved in %s" % (len(final.readlines()), self.goodproxy)
 
