@@ -1,7 +1,6 @@
 import socket
 import re
 import requests
-import sys
 from time import sleep
 from urlparse import urlparse
 from lxml import html
@@ -13,12 +12,13 @@ __author__ = 'Kir Marchenko \nkir.marchenko@gmail.com'
 
 
 class ProxyHunter(object):
-    def __init__(self, good_proxies='goodproxylist.txt', verbose=False, timeout=2, threads=200, pages=2):
+    def __init__(self, good_proxies='goodproxylist.txt', verbose=False, store=False, timeout=2, threads=200, pages=2):
         self.timeout = timeout
         self.verbose = verbose
         self.goodproxy = good_proxies
         self.threads = threads
         self.max_pages_to_search = pages
+        self.store = store
 
     def get_links(self):
         untested_proxy = []
@@ -31,25 +31,26 @@ class ProxyHunter(object):
                 untested_proxy += proxy_servers if proxy_servers else []
         return untested_proxy
 
-    def get_proxies(self, site):
-        result = urlparse(site)
+    def get_proxies(self, remote_file):
+        result = urlparse(remote_file)
         if not result.scheme:
-            site = 'http://%s' % site
+            remote_file = 'http://%s' % remote_file
         if result.scheme == 'ftp':
             return
         if self.verbose:
-            print "Parse proxy from %s" % (site.split("//", 3)[1])
+            print "Parse proxy from %s" % (remote_file.split("//", 3)[1])
 
         try:
-            req = requests.get(site, timeout=self.timeout)
+            req = requests.get(remote_file, timeout=self.timeout)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, socket.timeout):
-            print "Can't connect to %s" % site
+            if self.verbose:
+                print "Can't connect to %s" % remote_file
             return
         if not req.ok:
             return
         proxies = re.findall('\d{1,3}[.]\d{1,3}[.]\d{1,3}[.]\d{1,3}\s*?[:]\s*?\d{1,5}', req.text)
-        sys.stdout.write("%d Proxies received from %s \n" % (len(proxies), site.split("//", 3)[1]))
-        sys.stdout.flush()
+        if self.verbose:
+            print "%d Proxies received from %s \n" % (len(proxies), remote_file.split("//", 3)[1])
         return proxies
 
     def proxy_is_alive(self, proxy):
@@ -64,53 +65,54 @@ class ProxyHunter(object):
             return False
         return True if 'microsoft' in test_req.text else False
 
-    def check_proxy(self, proxy_to_check, proxy_file, proxy_list):
+    def check_proxy(self, proxy_to_check, proxy_list):
         if self.proxy_is_alive(proxy_to_check):
             if self.verbose:
                 print "%s is alive" % proxy_to_check
             proxy_list.append(proxy_to_check)
-            if proxy_file is not None:
-                proxy_file.write(proxy_to_check + '\n')
         else:
             if self.verbose:
                 print "%s is dead" % proxy_to_check
 
-    def check_proxies_multi_thread(self, proxylist, file_to_store=None):
+    def check_proxies_multi_thread(self, proxylist):
         good_proxies = []
+        print 'Start checking %d proxy servers in maximum of %d threads. Please wait.' % (len(proxylist),
+                                                                                          self.threads)
+        start_time = datetime.now()
         for proxy in set(proxylist):
             while activeCount() == self.threads:
                 sleep(1)
             try:
-                thread = Thread(target=self.check_proxy, args=(proxy, file_to_store, good_proxies))
+                thread = Thread(target=self.check_proxy, args=(proxy, good_proxies))
                 thread.daemon = True
                 thread.start()
             except Exception as e:
                 print 'Exception: %s \nActive threads: %d' % (e, activeCount())
         while activeCount() > 1:
             sleep(1)
+        finish_time = datetime.now()
+        delta = (finish_time - start_time).seconds
+        print 'Checking took %d seconds (about %s minutes). ' \
+              '%d proxies are good.' % (delta, "{0:.1f}".format(round(float(delta) / 60, 1)), len(good_proxies))
         return good_proxies
 
-    def save_good_proxy_list(self, founded_proxies):
+    def save_good_proxy_list(self, proxy_list_to_store):
         with open(self.goodproxy, 'w') as goodproxy:
-            proxylist = founded_proxies
-            print 'Start checking %d proxy servers in maximum of %d threads. Please wait.' % (len(proxylist),
-                                                                                              self.threads)
-            start_time = datetime.now()
-            self.check_proxies_multi_thread(proxylist, goodproxy)
-            finish_time = datetime.now()
-            delta = (finish_time - start_time).seconds
-            print 'Checking took %d seconds (about %s minutes)' % (delta, "{0:.1f}".format(round(float(delta) / 60, 1)))
-        with open(self.goodproxy, 'r') as final:
-            print "%d fresh proxies has been saved in %s" % (len(final.readlines()), self.goodproxy)
+            for proxy in proxy_list_to_store:
+                goodproxy.write('%s\n' % proxy)
+            print "%d fresh proxies has been saved in %s" % (len(proxy_list_to_store), self.goodproxy)
 
     def hunt(self):
         return self.get_links()
 
     def run(self):
         proxies = self.hunt()
-        self.save_good_proxy_list(proxies)
+        good_proxies = self.check_proxies_multi_thread(proxies)
+        if self.store:
+            self.save_good_proxy_list(good_proxies)
+        return good_proxies
 
 
 if __name__ == '__main__':
-    hunter = ProxyHunter(verbose=False)
+    hunter = ProxyHunter()
     hunter.run()
