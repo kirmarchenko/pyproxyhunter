@@ -6,7 +6,7 @@ from urlparse import urlparse
 from lxml import html
 from threading import activeCount, Thread
 from datetime import datetime
-from requests.packages.urllib3.exceptions import LocationParseError
+from requests.packages.urllib3.exceptions import LocationParseError, ProxySchemeUnknown
 
 __author__ = 'Kir Marchenko \nkir.marchenko@gmail.com'
 
@@ -61,7 +61,7 @@ class ProxyHunter(object):
             test_req = requests.get('http://microsoft.com/', proxies=proxies, timeout=self.timeout)
         except (requests.exceptions.ConnectionError, LocationParseError, requests.exceptions.Timeout,
                 requests.exceptions.InvalidURL, requests.exceptions.SSLError, requests.exceptions.TooManyRedirects,
-                socket.timeout):
+                socket.timeout, ProxySchemeUnknown):
             return False
         return True if 'microsoft' in test_req.text else False
 
@@ -114,5 +114,5 @@ class ProxyHunter(object):
 
 
 if __name__ == '__main__':
-    hunter = ProxyHunter()
+    hunter = ProxyHunter(store=True)
     hunter.run()
