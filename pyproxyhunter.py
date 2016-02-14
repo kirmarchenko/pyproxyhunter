@@ -63,7 +63,7 @@ class ProxyHunter(object):
             "http": 'http://%s/' % proxy.replace(' ', '')
         }
         try:
-            test_req = requests.get('http://ip-api.com/json', proxies=proxies, timeout=self.timeout)
+            test_req = requests.get('http://ip-api.com/json/?fields=country,status', proxies=proxies, timeout=self.timeout)
         except Exception as e:
             return False
         try:
