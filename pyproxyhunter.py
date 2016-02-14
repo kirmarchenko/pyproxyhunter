@@ -12,10 +12,14 @@ __author__ = 'Kir Marchenko \nkir.marchenko@gmail.com'
 
 
 class ProxyHunter(object):
-    def __init__(self, good_proxies='goodproxylist.txt', verbose=False, store=False, timeout=2, threads=200, pages=1):
+    """
+    This class search proxy files in google and then check every proxy if it's alive.
+    After that all fresh proxy with country names will be returned and can be stored to file.
+    """
+    def __init__(self, output_file='fresh_proxy.txt', verbose=False, store=False, timeout=2, threads=200, pages=1):
         self.timeout = timeout
         self.verbose = verbose
-        self.goodproxy = good_proxies
+        self.output_file = output_file
         self.threads = threads
         self.max_pages_to_search = pages
         self.store = store
@@ -41,7 +45,7 @@ class ProxyHunter(object):
             remote_file = 'http://%s' % remote_file
         if result.scheme == 'ftp':
             return
-        self.print_if_verbose("Parse proxy from %s" % (remote_file.split("//", 3)[1]))
+        self.print_if_verbose("Parse proxy from %s" % remote_file)
 
         try:
             req = requests.get(remote_file, timeout=self.timeout)
@@ -51,7 +55,7 @@ class ProxyHunter(object):
         if not req.ok:
             return
         proxies = re.findall('\d{1,3}[.]\d{1,3}[.]\d{1,3}[.]\d{1,3}\s*?[:]\s*?\d{1,5}', req.text)
-        self.print_if_verbose("%d Proxies received from %s \n" % (len(proxies), remote_file.split("//", 3)[1]))
+        self.print_if_verbose("%d Proxies received from %s \n" % (len(proxies), remote_file))
         return proxies
 
     def proxy_is_alive(self, proxy):
@@ -104,11 +108,11 @@ class ProxyHunter(object):
 
     def save_good_proxy_list(self, proxy_list_to_store):
         proxy_list_to_store.sort(key=lambda data: data[1])
-        with open(self.goodproxy, 'w') as goodproxy:
+        with open(self.output_file, 'w') as goodproxy:
             for line in proxy_list_to_store:
                 proxy, country = line
                 goodproxy.write('%s %s\n' % (proxy, country))
-            print "%d fresh proxies saved to %s" % (len(proxy_list_to_store), self.goodproxy)
+            print "%d fresh proxies saved to %s" % (len(proxy_list_to_store), self.output_file)
 
     def hunt(self):
         return self.get_links()
