@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-import socket
 import re
 import requests
-from time import sleep
-from urlparse import urlparse
+import socket
+from datetime import datetime
 from lxml import html
 from threading import activeCount, Thread
-from datetime import datetime
+from time import sleep
+from urlparse import urlparse
 
 __author__ = 'Kir Marchenko \nkir.marchenko@gmail.com'
 
