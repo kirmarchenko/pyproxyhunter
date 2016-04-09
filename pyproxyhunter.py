@@ -123,6 +123,9 @@ class ProxyHunter(object):
             # Probably just dead or slow proxy, so
             return None
 
+        if "status" not in info:
+            return None
+
         if not info["status"] == "fail":
             country = info["country"]
             return self.proxy(server, country)
