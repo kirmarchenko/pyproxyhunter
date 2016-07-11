@@ -123,9 +123,11 @@ class ProxyHunter(object):
             # Probably just dead or slow proxy, so
             return None
 
-        if "status" not in info:
+        try:
+            if "status" not in info:
+                return None
+        except TypeError:  # Empty response
             return None
-
         if not info["status"] == "fail":
             country = info["country"]
             return self.proxy(server, country)
@@ -155,18 +157,21 @@ class ProxyHunter(object):
                                                                        self.threads)
         start_time = datetime.now()
 
+        threads = []
+
         for proxy in proxies_to_check:
             while activeCount() == self.threads:
                 sleep(1)
             try:
                 thread = Thread(target=self.check_proxy, args=(proxy, proxies))
                 thread.daemon = True
+                threads.append(thread)
                 thread.start()
             except Exception as exception:
                 print "Exception: {} \nActive threads: {}".format(exception, activeCount())
 
-        while activeCount() > 1:
-            sleep(1)
+        for thread in threads:
+            thread.join()
 
         delta = (datetime.now() - start_time).seconds
         print "Checked for {} seconds (about {} minutes). {} proxies are good.".format(delta,
