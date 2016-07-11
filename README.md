@@ -1,5 +1,7 @@
-# pyproxyhunter
+# pyproxyhunter (python proxyhunter)
 Python proxy hunter is a tool that will help you to get quickly a number of free and fast proxy servers.
+It hunt proxy servers via google search, so you will have fresh results every time you use this software.
+You can save fast and free proxy servers sorted by country to the text file, or import this module to your python program.
 
 ##Usage:
 ### From CLI to easily hunt proxies and  save them to output.txt file:
