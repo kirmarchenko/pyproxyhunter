@@ -2,20 +2,21 @@
 """Python proxy hunter is a tool that will help you to get quickly a number
 of free and fast proxy servers.
 """
+import json
 import os
 import re
 import socket
 
+import progressbar
 import requests
 
 from collections import namedtuple
-from datetime import datetime
-from requests.exceptions import ConnectionError, Timeout
 from threading import activeCount, Thread
 from time import sleep
 from urlparse import urlparse
 
 from lxml import html
+from requests.exceptions import ConnectionError, Timeout
 
 
 def get_proxy_object():
@@ -53,6 +54,7 @@ class ProxyHunter(object):
                 print "Proxy servers would be saved to {}.".format(self.output_file)
 
         self.proxy = get_proxy_object()
+        self.processed_proxies = 0
 
     def print_if_verbose(self, message):
         """Would print a message if self.verbose is True
@@ -116,7 +118,7 @@ class ProxyHunter(object):
         try:
             response = requests.get("http://ip-api.com/json/?fields=country,status",
                                     proxies=proxies, timeout=self.timeout)
-            info = response.json()
+            info = json.loads(response.text)
         except Exception as exception:
             self.print_if_verbose(exception.message)
             # Seems like something went wrong with connection.
@@ -134,12 +136,16 @@ class ProxyHunter(object):
         else:
             return None
 
-    def check_proxy(self, proxy_to_check, proxy_list):
+    def check_proxy(self, proxy_to_check, proxy_list, progress_bar):
         """Check if proxy is good, if so - save it to list for good proxies
         :param proxy_to_check: proxy server to check
         :param proxy_list: list for good proxies
+        :param progress_bar: progress visualizer
         """
         result = self.get_proxy_info(proxy_to_check)
+
+        self.processed_proxies += 1
+        progress_bar.update(self.processed_proxies)
 
         if result is not None:
             self.print_if_verbose("{} is alive".format(proxy_to_check))
@@ -155,15 +161,19 @@ class ProxyHunter(object):
         proxies = []
         print "{} proxy to check with {} threads. Please wait.".format(len(proxies_to_check),
                                                                        self.threads)
-        start_time = datetime.now()
-
         threads = []
+
+        bar = progressbar.ProgressBar(maxval=float(len(proxies_to_check)), widgets=[
+            progressbar.ETA(),
+            " Progress: ",
+            progressbar.Percentage(),
+        ]).start()
 
         for proxy in proxies_to_check:
             while activeCount() == self.threads:
                 sleep(1)
             try:
-                thread = Thread(target=self.check_proxy, args=(proxy, proxies))
+                thread = Thread(target=self.check_proxy, args=(proxy, proxies, bar))
                 thread.daemon = True
                 threads.append(thread)
                 thread.start()
@@ -172,11 +182,9 @@ class ProxyHunter(object):
 
         for thread in threads:
             thread.join()
+        bar.finish()
 
-        delta = (datetime.now() - start_time).seconds
-        print "Checked for {} seconds (about {} minutes). {} proxies are good.".format(delta,
-                                                                                       round(delta / 60., 1),
-                                                                                       len(proxies))
+        print "{} proxies are good.".format(len(proxies))
         return proxies
 
     def save_results(self, proxy_list_to_store):

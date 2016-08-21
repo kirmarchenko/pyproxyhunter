@@ -4,12 +4,17 @@ It hunt proxy servers via google search, so you will have fresh results every ti
 You can save fast and free proxy servers sorted by country to the text file, or import this module to your python program.
 
 ##Usage:
+### Install requirements
+```pip install -r requirements.txt```
+I hope soon you'll need just to `pip install pyproxyhunter`
 ### From CLI to easily hunt proxies and  save them to output.txt file:
 ```bash
 user@localhost:~/pyproxyhunter$ python pyproxyhunter.py 
-6236 proxy to check with 200 threads. Please wait.
-Checked for 99 seconds (about 1.6 minutes). 777 proxies are good.
-777 fresh proxies saved to output.txt
+Proxy servers would be saved to /home/user/pyproxyhunter/output.txt.
+12046 proxy to check with 500 threads. Please wait.
+Time: 0:01:02 Progress: 100%                                                                                                                                    
+284 proxies are good.
+284 fresh proxies saved to /home/user/pyproxyhunter/output.txt
 user@localhost:~/pyproxyhunter$ head output.txt 
 193.194.69.36:3128      Algeria
 200.70.56.204:3128      Argentina
@@ -22,7 +27,7 @@ user@localhost:~/pyproxyhunter$ head output.txt
 189.113.135.230:8080    Brazil
 177.44.136.226:3128     Brazil
 user@localhost:~/pyproxyhunter$ wc -l output.txt
-777 output.txt
+284 output.txt
 ```
 ### Importing module to your own project:
 ```python
@@ -38,12 +43,14 @@ print russian_proxies
 ```
 You'll get the following output:
 ```
-9132 proxy to check with 150 threads. Please wait.
-Checked for 187 seconds (about 3.1 minutes). 837 proxies are good.
-[u'217.20.83.130:3128', u'37.228.89.210:80', u'79.120.72.222:3128', u'31.131.251.102:8080', u'90.154.127.19:8000', 
-u'95.215.71.46:3128', u'93.88.143.100:3128', u'94.230.120.195:3128', u'188.40.62.138:80', u'85.143.24.70:80', 
-u'85.198.106.174:3128', u'37.143.8.59:81', u'217.20.83.130:3128', u'85.143.24.70:80', u'178.210.47.239:3128', 
-u'5.53.16.183:8080']
+13396 proxy to check with 150 threads. Please wait.
+Time: 0:04:33 Progress: 100%                                                                                                                                    
+428 proxies are good.
+[u'85.143.24.70:80', u'82.200.81.233:80', u'78.36.152.6:8080', u'85.143.24.70:80', u'185.12.94.236:4444', 
+u'77.73.236.18:3128', u'84.242.242.182:8080', u'193.238.50.62:8080', u'46.8.49.26:10000', u'77.73.110.222:3128', 
+u'80.253.28.174:8080', u'83.239.227.245:8080', u'46.21.68.1:8080', u'80.240.104.241:8000', u'83.69.209.146:8080', 
+u'185.12.94.236:4444', u'5.53.16.183:8080', u'217.21.220.156:8080', u'77.233.11.50:80', u'85.143.24.70:80', 
+u'178.49.228.101:3128']
 ```
 
 In case of any questions you can contact me via kir.marchenko@gmail.com
