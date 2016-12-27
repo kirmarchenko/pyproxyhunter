@@ -9,23 +9,23 @@ You can save fast and free proxy servers sorted by country to the text file, or 
 I hope soon you'll need just to `pip install pyproxyhunter`
 ### From CLI to easily hunt proxies and  save them to output.txt file:
 ```bash
-user@localhost:~/pyproxyhunter$ python pyproxyhunter.py 
+user@localhost:~/pyproxyhunter$ python pyproxyhunter.py
 Proxy servers would be saved to /home/user/pyproxyhunter/output.txt.
 12046 proxy to check with 500 threads. Please wait.
 Time: 0:01:02 Progress: 100%                                                                                                                                    
 284 proxies are good.
 284 fresh proxies saved to /home/user/pyproxyhunter/output.txt
 user@localhost:~/pyproxyhunter$ head output.txt 
-193.194.69.36:3128      Algeria
-200.70.56.204:3128      Argentina
-190.228.33.114:8080     Argentina
-89.249.207.65:3128      Armenia
-203.37.37.143:80        Australia
-195.34.146.175:80       Austria
-103.13.133.202:8080     Bangladesh
-103.13.133.198:8080     Bangladesh
-189.113.135.230:8080    Brazil
-177.44.136.226:3128     Brazil
+193.194.69.36:3128
+200.70.56.204:3128
+190.228.33.114:8080
+89.249.207.65:3128
+203.37.37.143:80
+195.34.146.175:80
+103.13.133.202:8080
+103.13.133.198:8080
+189.113.135.230:8080
+177.44.136.226:3128
 user@localhost:~/pyproxyhunter$ wc -l output.txt
 284 output.txt
 ```
@@ -33,7 +33,7 @@ user@localhost:~/pyproxyhunter$ wc -l output.txt
 ```python
 from pyproxyhunter import ProxyHunter
 
-hunter = ProxyHunter(pages=2, timeout=3, threads=150)
+hunter = ProxyHunter(pages=2, timeout=3, threads=150, get_country_info=True)
 
 proxy_servers = hunter.hunt()
 
