@@ -33,19 +33,21 @@ class ProxyHunter(object):
     """
 
     def __init__(self, verbose=False, store=False, timeout=2, threads=500,
-                 pages=1, output_file=None):
+                 pages=1, output_file=None, get_country_info=False):
         """:param verbose: bool, print various information about hunting process
         :param store: bool, save founded good proxies to file
         :param timeout: int, connection timeout via proxy in seconds
         :param threads: int, threads to check proxies
         :param pages: int, number of google pages to search for files with proxy servers
         :param output_file: string, filename to save proxies
+        :param get_country_info: bool, check country of origin, or just check if proxy is live
         """
         self.verbose = verbose
         self.store = store
         self.timeout = timeout
         self.threads = threads
         self.max_pages_to_search = pages
+        self.get_country = get_country_info
         if self.store:
             self.output_file = os.path.abspath(output_file or "output.txt")
             store_dir = os.path.dirname(self.output_file)
@@ -116,9 +118,10 @@ class ProxyHunter(object):
             "http": "http://{}/".format(server.replace(' ', ''))
         }
 
+        url = "http://ip-api.com/json/?fields=country,status" if self.get_country else "http://ip.jsontest.com/"
+
         try:
-            response = requests.get("http://ip-api.com/json/?fields=country,status",
-                                    proxies=proxies, timeout=self.timeout)
+            response = requests.get(url, proxies=proxies, timeout=self.timeout)
             info = json.loads(response.text)
         except Exception as exception:
             self.print_if_verbose(exception.message)
@@ -126,9 +129,13 @@ class ProxyHunter(object):
             # Probably just dead or slow proxy, so
             return None
 
+
         try:
             if "status" not in info:
-                return None
+                if self.get_country:
+                    return None
+                else:
+                    return None if "ip" not in info else self.proxy(server, "")
         except TypeError:  # Empty response
             return None
         if not info["status"] == "fail":
@@ -145,7 +152,10 @@ class ProxyHunter(object):
         """
         result = self.get_proxy_info(proxy_to_check)
 
-        progress_bar.update()
+        try:
+            progress_bar.update()
+        except ZeroDivisionError:
+            pass
 
         if result is not None:
             self.print_if_verbose("{} is alive".format(proxy_to_check))
