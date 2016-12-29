@@ -9,9 +9,8 @@ import socket
 
 from collections import namedtuple
 from threading import Thread
-from queue import Queue
+from Queue import Queue
 from urlparse import urlparse
-
 import requests
 from requests.exceptions import ConnectionError, Timeout
 
