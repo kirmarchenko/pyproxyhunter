@@ -143,7 +143,7 @@ class ProxyHunter(object):
         except TypeError:  # Empty response
             return None
         if not info["status"] == "fail":
-            country = info["country"]
+            country = info.get("country", "Unknown")
             return self.proxy(server, country)
         else:
             return None
