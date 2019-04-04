@@ -9,8 +9,14 @@ import socket
 
 from collections import namedtuple
 from threading import Thread
-from Queue import Queue
-from urlparse import urlparse
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
+try:
+    from urlparse import urlparse
+except ImportError:
+    from urllib.parse import urlparse
 import requests
 from requests.exceptions import ConnectionError, Timeout
 
@@ -50,10 +56,10 @@ class ProxyHunter(object):
             self.output_file = os.path.abspath(output_file or "output.txt")
             store_dir = os.path.dirname(self.output_file)
             if not os.access(store_dir, os.W_OK):
-                print "Can't save proxy servers to {} - not enough permissions.".format(self.output_file)
+                print("Can't save proxy servers to {} - not enough permissions.".format(self.output_file))
                 exit(1)
             else:
-                print "Proxy servers would be saved to {}.".format(self.output_file)
+                print("Proxy servers would be saved to {}.".format(self.output_file))
 
         self.proxy = get_proxy_object()
 
@@ -62,14 +68,14 @@ class ProxyHunter(object):
         :param message: string, message to print
         """
         if self.verbose:
-            print message
+            print(message)
 
     def collect_proxies(self):
         """Method to search in google for *.txt files with proxy servers
         :return: list of file urls
         """
         proxies = []
-        for page in xrange(self.max_pages_to_search):
+        for page in range(self.max_pages_to_search):
             response = requests.get(
                 "https://www.google.com/search?q=+\":8080\" +\":3128\" +\":80\" filetype:txt&start={}0".format(page)
             )
@@ -80,7 +86,7 @@ class ProxyHunter(object):
                     r"/url\?q=((?!.*webcache)(?:(?:https?|ftp)://|www\.|ftp\.)[^'\r\n]+\.txt)", url
                 )
                 proxies += self.get_proxies(proxy_file)
-        return proxies
+        return set(proxies)
 
     def get_proxies(self, urls):
         """Requests file, extracts proxy servers from it.
@@ -94,19 +100,19 @@ class ProxyHunter(object):
                 url = "http://{}".format(url)
             if result.scheme == "ftp":
                 # We don't work with FTP
-                return []
+                continue
             self.print_if_verbose("Parsing {}".format(url))
 
             try:
                 response = requests.get(url, timeout=self.timeout)
             except (ConnectionError, Timeout, socket.timeout):
                 self.print_if_verbose("Can't connect to {}".format(url))
-                return []
+                continue
             if not response.ok:
                 self.print_if_verbose(
                     "Can't connect to {}, status code: {}".format(url, response.status_code)
                 )
-                return []
+                continue
             proxies += re.findall(
                 r"\d{1,3}[.]\d{1,3}[.]\d{1,3}[.]\d{1,3}\s*?[:]\s*?\d{1,5}", response.text
             )
@@ -129,7 +135,7 @@ class ProxyHunter(object):
             )
             info = json.loads(response.text)
         except Exception as exception:
-            self.print_if_verbose(exception.message)
+            self.print_if_verbose(exception.args)
             # Seems like something went wrong with connection.
             # Probably just dead or slow proxy, so
             return None
@@ -177,7 +183,7 @@ class ProxyHunter(object):
         proxies = []
         total_collected = len(proxies_to_check)
         start_msg = "\n{} proxy to check with {} threads. Please wait.\n"
-        print start_msg.format(total_collected, self.threads)
+        print(start_msg.format(total_collected, self.threads))
         threads = []
         bar_format = "{l_bar}{bar}| {n_fmt}/{total_fmt} ETA:{remaining}"
         check_bar = ModifiedTqdmProgressbar(total=total_collected, desc="Check progress",
@@ -189,7 +195,7 @@ class ProxyHunter(object):
         for proxy in proxies_to_check:
             queue.put(proxy)
 
-        for _ in xrange(self.threads):
+        for _ in range(self.threads):
             thread = Thread(target=self.check_proxy, args=(queue, proxies, check_bar))
             thread.daemon = True
             thread.start()
@@ -200,8 +206,8 @@ class ProxyHunter(object):
                 for thread in threads:
                     thread.join(1)
         except KeyboardInterrupt:
-            print "\nOh, you want to break checking? " \
-                  "Let me stop running threads and give you everything I've found."
+            print("\nOh, you want to break checking? "
+                  "Let me stop running threads and give you everything I've found.")
 
         check_bar.close()
 
@@ -216,7 +222,7 @@ class ProxyHunter(object):
         with open(self.output_file, "w") as good_proxy:
             for proxy in proxy_list_to_store:
                 good_proxy.write("{}\t{}\n".format(proxy.server, proxy.country))
-            print "{} fresh proxies saved to {}".format(len(proxy_list_to_store), self.output_file)
+            print("{} fresh proxies saved to {}".format(len(proxy_list_to_store), self.output_file))
 
     def hunt(self):
         """Global method to collect, test, optionally save and return good proxies
@@ -226,8 +232,8 @@ class ProxyHunter(object):
         live_proxies = self.check_proxies_multi_thread(proxies)
 
         if not live_proxies:
-            print "It's weird, but no live proxy was found. " \
-                  "If you think it's a mistake - please, contact the developer."
+            print("It's weird, but no live proxy was found. "
+                  "If you think it's a mistake - please, contact the developer.")
             exit(1)
 
         if self.store:
