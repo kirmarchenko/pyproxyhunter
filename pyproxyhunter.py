@@ -31,6 +31,10 @@ def get_proxy_object():
     return namedtuple("Proxy", ["server", "country"])
 
 
+class NoProxiesFoundError(Exception):
+    pass
+
+
 class ProxyHunter(object):
     """This class search proxy files in google and check every proxy
     if it's alive. After that, all fresh proxy with country names (optionally)
@@ -38,13 +42,13 @@ class ProxyHunter(object):
     """
 
     def __init__(self, verbose=False, store=False, timeout=2, threads=500,
-                 pages=1, input_file=None, output_file=None, get_country_info=False):
+                 pages=1, input_files=None, output_file=None, get_country_info=False):
         """:param verbose: bool, print various information about hunting process
         :param store: bool, save founded good proxies to file
         :param timeout: int, connection timeout via proxy in seconds
         :param threads: int, threads to check proxies
         :param pages: int, number of google pages to search for files with proxy servers
-        :param input_file: string, filename with proxy servers to check
+        :param input_files: string or list, filename(s) with proxy servers to check
         :param output_file: string, filename to save proxies
         :param get_country_info: bool, check country of origin, or just check if proxy is live
         """
@@ -54,7 +58,7 @@ class ProxyHunter(object):
         self.threads = threads
         self.max_pages_to_search = pages
         self.get_country = get_country_info
-        self.input_file = input_file
+        self.input_files = input_files
         if self.store:
             self.output_file = os.path.abspath(output_file or "output.txt")
             store_dir = os.path.dirname(self.output_file)
@@ -79,7 +83,7 @@ class ProxyHunter(object):
         :return: list of file urls
         """
         proxies = []
-        if not self.input_file:
+        if not self.input_files:
             for page in range(self.max_pages_to_search):
                 response = requests.get(
                     "https://www.google.com/search?q=+\":8080\" +\":3128\" +\":80\" filetype:txt&start={}0".format(page)
@@ -92,12 +96,16 @@ class ProxyHunter(object):
                     )
                     proxies += self.get_proxies(proxy_file)
         else:
-            try:
-                with open(self.input_file) as i_file:
-                    proxies = self.extract_proxies_from_file(i_file.read())
-            except IOError:
-                print('Couldn\'t read from "{}"'.format(self.input_file))
-                exit(1)
+            if isinstance(self.input_files, str):
+                self.input_files = [self.input_files]
+            for input_file in self.input_files:
+                try:
+                    with open(input_file) as i_file:
+                        proxies += self.extract_proxies_from_file(i_file.read())
+                except IOError:
+                    print('Couldn\'t read from "{}"'.format(input_file))
+        if not proxies:
+            raise NoProxiesFoundError('No proxies found!')
         return set(proxies)
 
     def get_proxies(self, urls):
